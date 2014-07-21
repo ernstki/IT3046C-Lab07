@@ -14,7 +14,8 @@
     <link rel="stylesheet" href="css/font-awesome.min.css">
     <link href='http://fonts.googleapis.com/css?family=News+Cycle:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="css/main.css" />
-    <script type="text/javascript" src="script.js"></script> <!-- link to external JS file -->
+    <script type="text/javascript" src="draw-tools.js"></script>
+    <script type="text/javascript" src="script.js"></script>
   </head>
   <body>
     <section>
@@ -24,9 +25,13 @@
       </header>
       <div id="main">
         <div id="drawing-area">
+          
+          <!-- Image coordinates -->
           <div id="coords" class="palette">x=<span id="x-coord"> </span>,
                 y=<span id="y-coord"> </span>
           </div>
+
+          <!-- Tool palette -->
           <div id="tools" class="palette">
             <button id="pencil" class="btn-active" title="Pencil Tool - draws narrow lines">
               <i class="fa fa-pencil"></i></button><br>
@@ -39,10 +44,20 @@
               <i class="fa fa-save"></i></button><br>
             <button id="trash" title="Trash Image - clears canvas">
               <i class="fa fa-trash-o"></i></button><br>
-           </div> <!-- tools -->
-           <div id="preview" class="palette">
-             <img id="save-preview">
-           </div>
+          </div> <!-- tools -->
+          
+          <!-- Tool options palette -->
+           
+          <!-- Image preview area -->
+          <div id="preview" class="palette">
+            <button id='preview-toggle' title="Show/Hide Preview Area"
+             class="btn-active">
+              <i class="fa fa-eye"></i>
+            </button>
+            <img id="save-preview">
+          </div>
+           
+          <!-- Drawing Area --> 
           <canvas id="canvas" width="800" height="600">
             Hrm. Seems your browser doesn't support the HTML5 canvas.
             Sorry it didn't work out.

@@ -1,4 +1,10 @@
 # Web deployment manifest for IT3046C Lab07
+css/
+fonts/
 main.css
+draw-tools.js
 script.js
 Ernst_Lab07.html
+jquery-2.1.1.min.js
+smoothing.js
+smoothing.html

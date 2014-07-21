@@ -19,48 +19,93 @@ $(function() {
   var brushSubMenu = $('#paint-shapes-submenu');
   var trashBtn     = $('button#trash');
   var saveBtn      = $('button#save');
+  var previewBtn   = $('button#preview-toggle');
+  var previewImg   = $('#save-preview');
+  var previewArea  = $('div#preview');
   var g2           = canvas[0].getContext("2d"); // get element from jQuery obj
-  var NUM_SIDES    = 3;                          // triangle-shaped brush
-  var ERASER_SIZE  = 20;
-  var BRUSH_SIZE   = 10;
-  var PENCIL_SIZE  = 3;
-  var SPLATTER     = 5;
+  var JITTER_TIMER = 50;                         // msec
   var drawTimeout  = 0;
   var penDown      = false;
+  var activeTool   = 'pencil';
+  var previewOn    = true;
   var ptbuf        = [];                         // buffer of points
   
-  function updateCoords(event) {
-    xDisp.text( parseInt(event.pageX - canvas.offset().left) );
-    yDisp.text( parseInt(event.pageY - canvas.offset().top) );
-  }
+
+  
+  // ============================================================
+  //        D R A W I N G    A R E A    B I N D I N G S
+  // ============================================================
+  
+  canvas.mousedown(function(evt) {
+    penDown = true;
+    $(".palette").addClass('ignore-ptr-events');
+    var startX = evt.pageX - $(this).offset().left;
+    var startY = evt.pageY - $(this).offset().top;
+    ptbuf.push( { x: startX, y: startY } );
+                  
+    // If the buffer isn't full after 50 msecs and the last point in the
+    // buffer hasn't moved very much (the width of the pencil stroke):
+    if (activeTool == 'pencil') {
+      window.setTimeout(function() {
+        if (ptbuf.length < 3
+            && Math.abs(ptbuf[ptbuf.length-1].x - startX) < PENCIL_SIZE
+            && Math.abs(ptbuf[ptbuf.length-1].y - startY) < PENCIL_SIZE) {
+          // Don't wait for three points, just draw a dot and empty the buffer:
+          circle(g2, startX, startY, PENCIL_SIZE);
+          for (var i = 0; i < ptbuf.length; i++) { ptbuf.pop(); }
+        } // if the buffer isn't full'
+      }, JITTER_TIMER);
+    } // if activeTool == pencil
+  }); // canvas.mousedown
+
+
+  canvas.mouseup(function() {
+    penDown = false;
+    $(".palette").hide().removeClass('ignore-ptr-events').fadeIn(500);
+    // Purge the point buffer:
+    for (var i = 0; i < ptbuf.length; i++) { ptbuf.pop(); }
+    console.log(ptbuf.length + ' ' + ptbuf.toString());
+    updatePreview();
+  }); // canvas.mouseup
+
 
   // Handle penDown events for both tools
   function draw(event) {
-    if (!penDown && event.type === 'mousemove') { return; }
-    if (event.type === 'mouseup') {
-      penDown = false;
-      $(".palette").hide().removeClass('ignore-ptr-events').fadeIn(500);
-      return;
-    } // otherwise, start penDown:
+    if (!penDown) { return; }
     
-    penDown = true;
-    // Prevent palettes from intercepting events:
-    $(".palette").addClass('ignore-ptr-events');
+    var newX = event.pageX - $(this).offset().left;
+    var newY = event.pageY - $(this).offset().top;
     
-    var x = parseInt(event.pageX - canvas.offset().left);
-    var y = parseInt(event.pageY - canvas.offset().top);
-    
-    g2.beginPath();
-    g2.moveTo(x, y);
-    g2.lineCap = 'round';
-    g2.lineWidth = PENCIL_SIZE;
-    g2.lineTo(event.pageX, event.pageY);
-    g2.strokeStyle = 'black';
-    g2.stroke();
-    
-  } // beginDrawing(evt)
-
+    switch (activeTool) {
+      case 'airbrush':
+        break;
+      case 'pencil':
+      default:
+        ptbuf.push( { x: newX, y: newY } );
+        if (ptbuf.length == 3) {
+          // console.log('Drawing...');
+          pencil( { context: g2, buf: ptbuf, } );
+          ptbuf.shift(); ptbuf.shift();  // last point is now first
+        } // if there are three points in the buffer
+    } // switch activeTool
+  } // draw(evt)
   
+  
+  canvas.bind('mousemove', draw);
+
+
+  // ============================================================
+  //       P A L E T T E  /  S U B M E N U     A C T I O N S
+  // ============================================================
+
+  // Update mouse coordinates in the coordinates palette
+  canvas.mousemove(function(event) {
+    xDisp.text( parseInt(event.pageX - canvas.offset().left) );
+    yDisp.text( parseInt(event.pageY - canvas.offset().top) );
+  });
+  
+
+  // Toggle the paint shapes submenu
   function paintShapeSubmenu(event) {
     switch (event.type) {
       case 'mouseover':
@@ -74,33 +119,48 @@ $(function() {
     } // switch (event.type)
   } // paintShapeSubmenu(event)
 
-  function polygon(x, y, radius, numSides) {  
-    g2.beginPath();
-    var angle = Math.PI * 2 / numSides;
-    g2.translate(x,y);  //make x y the center
-    g2.moveTo(radius,0);
-    
-    for (var i = 1; i < numSides; i++) {
-      g2.lineTo(radius * Math.cos(angle * i),
-                radius * Math.sin(angle * i));
-    }
-    g2.closePath();  // draws the last side
-  } // function polygon(x,y,radius,numSides)
+  
+  // Toggle the preview area (set the enclosed image to display:none and
+  // the height/width of the <div> to 'auto') when the "eye" icon is clicked:
+  function togglePreviewArea(event) {
+    if (previewOn) {
+      previewImg.hide();
+      // Hopefully collapse the containing div to just hug the toggle button
+      previewArea.addClass('collapsed');
+      previewBtn.addClass('collapsed');
+      previewOn = false;
+      return;
+    } // otherwise, show it again
+    previewImg.show();
+    previewArea.removeClass('collapsed');
+    previewBtn.removeClass('collapsed');
+    previewOn = true;
+  } // togglePreviewArea(event)
+  
+  function updatePreview() {
+    // Source: http://www.html5canvastutorials.com/advanced/html5-canvas-save-penDown-as-an-image/
+    // save canvas image as data url (png format by default)
+    var dataURL = canvas[0].toDataURL();
+    // set #save-preview image src to dataURL so it can be saved as an image
+    previewImg.attr('src', dataURL);
+  } // updatePreview
 
-  canvas.bind('mousedown mouseup mousemove', draw);
-  //brushMenu.bind('mouseover mouseout', paintShapeSubmenu);
-  canvas.mousemove(updateCoords);
+
+  // ============================================================
+  //               B U T T O N    B I N D I N G S
+  // ============================================================
+
+  // Toggle the preview area on a mouse click
+  previewBtn.click(togglePreviewArea);
+
   //pencilBtn.bind('');
   //brushBtn.bind('');
   saveBtn.click(function() {
-      // Source: http://www.html5canvastutorials.com/advanced/html5-canvas-save-penDown-as-an-image/
-      // save canvas image as data url (png format by default)
-      var dataURL = canvas[0].toDataURL();
+    updatePreview();
 
-      // set #save-preview image src to dataURL
-      // so it can be saved as an image
-      $('#save-preview').attr('src', dataURL);
   });
+
+  // Clear the image when the trashcan icon is clicked
   trashBtn.click(function() {
     g2.clearRect(0, 0, canvas.width(), canvas.height());
   });

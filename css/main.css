@@ -55,9 +55,42 @@ a:hover   {
   right:10px;
 }
 
+div#preview.collapsed {
+  width:auto;
+  height:auto;
+  padding:0;
+}
+
 img#save-preview {
   width: 200px;
   height:150px;
+  /*top:0;
+  left:0;*/
+  position:absolute;
+  /* FIXME: This means you can't right click on the image to save it.
+            NOW I know how those crummy bastards did it. */
+  pointer-events:none;
+  z-index:10;
+}
+
+#preview-toggle {
+  top:5px;
+  left:3px;
+  z-index:100;
+}
+
+#preview-toggle.collapsed {
+  font-size:10px !important;
+}
+
+#preview-toggle i {
+  text-shadow: none;
+  color: #ccc; 
+}
+
+/* FIXME: This isn't working */'
+#preview-toggle i:hover {
+  color: #fff;
 }
 
 #canvas {
@@ -82,18 +115,32 @@ img#save-preview {
   padding:0.8em 0.3em;
 }
 
-#tools button {
+button {
   width:30px;
   height:30px;
   background:transparent;
   /*border:3px solid rgba(100,100,100,0.5);*/
   border:none;
-  margin-bottom:0.5em;
   cursor:inherit;
 }
 
-#tools button.active {
+button.active {
   border:1px solid black !important;
+}
+
+button i {
+  font-size:18px;
+  color:white;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+#tools button {
+  margin-bottom:0.5em;
+}
+
+#tools button i {
+ text-shadow:black 1px 1px 1px;
 }
 
 #tools button:hover {
@@ -110,14 +157,6 @@ img#save-preview {
 
 .submenu-open {
   background:rgba(0,0,0,0.5);
-}
-
-#tools i {
-  font-size:18px;
-  color:white;
-  margin-left:auto;
-  margin-right:auto;
-  text-shadow:black 1px 1px 1px;
 }
 
 #coords {
@@ -142,7 +181,7 @@ i.ccw90 {
 }
 
 .ignore-ptr-events {
- z-index:-100 !important; /*pointer-events:none;*/
+   z-index:-100 !important; /*pointer-events:none;*/
 }
 
 footer {
