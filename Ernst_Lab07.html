@@ -28,11 +28,25 @@
                 y=<span id="y-coord"> </span>
           </div>
           <div id="tools" class="palette">
-            <button id="brush"><i class="fa fa-pencil"></i></button></br>
-            <button id="clear"><i class="fa fa-eraser"></i></button></br>
-            <button id="save"><i class="fa fa-save"></i></button></br>
+            <button id="pencil" class="btn-active" title="Pencil Tool - draws narrow lines">
+              <i class="fa fa-pencil"></i></button><br>
+            <button id="airbrush" title="Airbrush Tool - paints on canvas">
+              <i class="fa fa-circle-o"></i></button><br>
+            <div id="paint-shapes-submenu" class="submenu">
+              <button id="airbrush-alt"><i class="fa fa-play ccw90"></i></button>
+            </div>
+            <button id="save" title="Export Image - save image to a file">
+              <i class="fa fa-save"></i></button><br>
+            <button id="trash" title="Trash Image - clears canvas">
+              <i class="fa fa-trash-o"></i></button><br>
+           </div> <!-- tools -->
+           <div id="preview" class="palette">
+             <img id="save-preview">
            </div>
-          <canvas id="canvas" width="800" height="600"></canvas>
+          <canvas id="canvas" width="800" height="600">
+            Hrm. Seems your browser doesn't support the HTML5 canvas.
+            Sorry it didn't work out.
+          </canvas>
         </div> <!-- drawing-area -->
       </div> <!-- main -->
       <!-- The practicum guide says to put "2013" -->
