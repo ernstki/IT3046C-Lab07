@@ -11,9 +11,11 @@
 $(function() {
   'use strict';
 
+  var DEBUG_BUFFERS = true;
   var canvas        = $('#canvas');
   var xDisp         = $('#x-coord');
   var yDisp         = $('#y-coord');
+  var debugArea     = $('p#debug');
   var toolbar       = $('div#tools');
   var pencilBtn     = $('button#pencil');
   var airbrushBtn   = $('button#airbrush');
@@ -23,6 +25,7 @@ $(function() {
   var saveBtn       = $('button#save');
   var previewBtn    = $('button#preview-toggle');
   var previewImg    = $('#save-preview');
+  var previewLink   = $('#download-link');
   var previewArea   = $('div#preview');
   var g2            = canvas[0].getContext("2d"); // 1st element in collection
   var JITTER_TIMER  = 50;                         // msec
@@ -60,19 +63,23 @@ $(function() {
                    color: PENCIL_COLOR,
                    radius: PENCIL_SIZE });
 
-          purgeBuffer();
+          purgePtBuf();
         } // if the buffer isn't full'
       }, JITTER_TIMER);
     } // if activeTool == pencil
   }); // canvas.mousedown
 
 
-  canvas.mouseup(function() {
+  // Stop drawing clear buffers and interval timers on mouseup or when the
+  // pointer leaves the canvas area.
+  function stopDrawing(evt) {
     penDown = false;
     // Fade the tool palettes and preview back in
     $(".palette").hide().removeClass('ignore-ptr-events').fadeIn(500);
 
-    // Purge the point buffer for the pencil
+    // Purge the point buffer for the pencil (wait a little while for the
+    // last points to come in; FIXME: didn't seem to help)
+    //window.setTimeout(purgePtBuf, JITTER_TIMER);
     purgePtBuf();
 
     // Clear ALL timer intervals (for the airbrush)
@@ -81,7 +88,10 @@ $(function() {
 
     console.log('ptbuf.length=' + ptbuf.length + ' ' + ptbuf.toString());
     updatePreview();
-  }); // canvas.mouseup
+  } // stopDrawing
+  
+  //canvas.bind('mouseup mouseout', stopDrawing);
+  canvas.bind('mouseup', stopDrawing);
   
   
   // =============================================================
@@ -89,8 +99,10 @@ $(function() {
   // =============================================================
   function purgePtBuf() {
     // Clear the point buffer for the pencil tool
-    for (var i = 0; i < ptbuf.length; i++) { ptbuf.pop(); }
-  }
+    for (var i = 0; i < ptbuf.length; i++) {
+      ptbuf.pop();
+    }
+  } // purgePtBuf
   function clearAirbrushIntervals() {
     // Clear all timer intervals for the airbrush
     for (var i = 0; i < airbuf.itvls.length; i++) {
@@ -131,11 +143,19 @@ $(function() {
   // ============================================================
   //       P A L E T T E  /  S U B M E N U     A C T I O N S
   // ============================================================
+  
+  function updateDebugInfo() {
+    if (DEBUG_BUFFERS) {
+      debugArea.html('ptbuf.length='+ptbuf.length+' airbuf.itvls.length='
+                     +airbuf.itvls.length);
+    }
+  } // updateDebugInfo
 
   // Update mouse coordinates in the coordinates palette
   canvas.mousemove(function(event) {
     xDisp.text( parseInt(event.pageX - canvas.offset().left) );
     yDisp.text( parseInt(event.pageY - canvas.offset().top) );
+    updateDebugInfo();
   });
   
 
@@ -155,20 +175,21 @@ $(function() {
 
   
   // Toggle the preview area (set the enclosed image to display:none and
-  // the height/width of the <div> to 'auto') when the "eye" icon is clicked:
+  // the height/width of the <div> to 'auto') when the "eye" icon is clicked
+  //
+  // (This is now done all in CSS with the .collapsed selector.)
   function togglePreviewArea(event) {
     if (previewOn) {
-      previewImg.hide();
-      // Hopefully collapse the containing div to just hug the toggle button
+      // Collapse the containing div to just hug the toggle button, hide the
+      // image and anchor.
       previewArea.addClass('collapsed');
-      previewBtn.addClass('collapsed');
+      previewArea.children().addClass('collapsed');
       previewOn = false;
       return;
     } // otherwise, show it again
     //updatePreview(); // make sure the image is up-to-date (prob unnecessary)
-    previewImg.show();
     previewArea.removeClass('collapsed');
-    previewBtn.removeClass('collapsed');
+    previewArea.children().removeClass('collapsed');
     previewOn = true;
   } // togglePreviewArea(event)
   
@@ -184,7 +205,7 @@ $(function() {
     // 'click' on it with JavaScript later to trigger a download
     // Source: http://www.nihilogic.dk/labs/canvas2image/
     dataURL.replace('image/png', 'image/octet-stream');
-    previewImg.wrap('<a href="'+dataURL+'" download="'+SAVE_FILENAME+'">');
+    previewLink.attr({ href: dataURL, download: SAVE_FILENAME });
   } // updatePreview
 
 
@@ -241,6 +262,8 @@ $(function() {
 
   // Clear the image when the trashcan icon is clicked
   trashBtn.click(function() {
+    // stopDrawing updates the preview *and* clears timers and buffers:
+    stopDrawing();
     g2.clearRect(0, 0, canvas.width(), canvas.height());
     updatePreview();
   });

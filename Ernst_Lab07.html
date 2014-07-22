@@ -27,8 +27,9 @@
         <div id="drawing-area">
           
           <!-- Image coordinates -->
-          <div id="coords" class="palette">x=<span id="x-coord"> </span>,
-                y=<span id="y-coord"> </span>
+          <div id="coords" class="palette">
+            <p>x=<span id="x-coord"> </span>, y=<span id="y-coord"> </span></p>
+            <p id="debug"> </p>
           </div>
 
           <!-- Tool palette -->
@@ -53,7 +54,8 @@
             <button id='preview-toggle' title="Show/Hide Preview Area">
               <i class="fa fa-eye"></i>
             </button>
-            <img id="save-preview">
+            <!-- the anchor href is set to canvas data URL by JavaScript -->
+            <a id="download-link"><img id="save-preview"></a>
           </div>
            
           <!-- Drawing Area --> 

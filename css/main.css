@@ -34,6 +34,10 @@ a:hover   {
   background-color:#ccd6ff;
   text-decoration:underline;
 }
+a#download-link:hover {
+  background-color:transparent;
+  text-decoration:none;
+}
 
 #drawing-area {
   margin-left:auto;
@@ -59,6 +63,10 @@ div#preview.collapsed {
   width:auto;
   height:auto;
   padding:0;
+}
+
+img.collapsed, a.collapsed {
+  display:none;
 }
 
 img#save-preview {
@@ -164,6 +172,16 @@ button i {
   right:10px;
   padding:0.3em 1em;
 }
+
+#coords p {
+  margin:0;
+}
+
+p#debug {
+  font-size:10px;
+  font-family:monospace;
+}
+
 
 
 /* http://css-tricks.com/snippets/css/text-rotation/ */
