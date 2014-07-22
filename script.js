@@ -9,12 +9,14 @@
 
 // jQuery shorthand method:
 $(function() {
+  'use strict';
 
   var canvas       = $('#canvas');
   var xDisp        = $('#x-coord');
   var yDisp        = $('#y-coord');
+  var toolbar      = $('div#tools');
   var pencilBtn    = $('button#pencil');
-  var brushBtn     = $('button#airbrush');
+  var airbrushBtn  = $('button#airbrush');
   var brushMenu    = $('#paint-shapes');
   var brushSubMenu = $('#paint-shapes-submenu');
   var trashBtn     = $('button#trash');
@@ -24,7 +26,7 @@ $(function() {
   var previewArea  = $('div#preview');
   var g2           = canvas[0].getContext("2d"); // get element from jQuery obj
   var JITTER_TIMER = 50;                         // msec
-  var drawTimeout  = 0;
+  var itvl         = { id: 0 };                  // interval for pass-by-ref
   var penDown      = false;
   var activeTool   = 'pencil';
   var previewOn    = true;
@@ -51,7 +53,10 @@ $(function() {
             && Math.abs(ptbuf[ptbuf.length-1].x - startX) < PENCIL_SIZE
             && Math.abs(ptbuf[ptbuf.length-1].y - startY) < PENCIL_SIZE) {
           // Don't wait for three points, just draw a dot and empty the buffer:
-          circle(g2, startX, startY, PENCIL_SIZE);
+          circle({ context: g2,
+                   centerX: startX,
+                   centerY: startY,
+                   radius: PENCIL_SIZE });
           for (var i = 0; i < ptbuf.length; i++) { ptbuf.pop(); }
         } // if the buffer isn't full'
       }, JITTER_TIMER);
@@ -64,11 +69,26 @@ $(function() {
     $(".palette").hide().removeClass('ignore-ptr-events').fadeIn(500);
     // Purge the point buffer:
     for (var i = 0; i < ptbuf.length; i++) { ptbuf.pop(); }
-    console.log(ptbuf.length + ' ' + ptbuf.toString());
+    // Clear any timer interval (for the airbrush)
+    clearInterval(itvl.id);
+    console.log('ptbuf.length=' + ptbuf.length + ' ' + ptbuf.toString());
     updatePreview();
   }); // canvas.mouseup
 
-
+// FIXME:
+  // function paint(event) {
+    // var newX = event.pageX - $(this).offset().left;
+    // var newY = event.pageY - $(this).offset().top;
+// 
+    // switch (activeTool) {
+      // case 'airbrush':
+        // airbrush( { context: g2, x: newX, y: newY }, itvl );
+        // console.log('itvl='+itvl.id);
+        // break;
+    // }
+  // } // paint(event)
+  // canvas.mousedown(paint);
+// 
   // Handle penDown events for both tools
   function draw(event) {
     if (!penDown) { return; }
@@ -78,6 +98,7 @@ $(function() {
     
     switch (activeTool) {
       case 'airbrush':
+        airbrush( { context: g2, x: newX, y: newY }, itvl );
         break;
       case 'pencil':
       default:
@@ -89,8 +110,7 @@ $(function() {
         } // if there are three points in the buffer
     } // switch activeTool
   } // draw(evt)
-  
-  
+
   canvas.bind('mousemove', draw);
 
 
@@ -153,8 +173,19 @@ $(function() {
   // Toggle the preview area on a mouse click
   previewBtn.click(togglePreviewArea);
 
-  //pencilBtn.bind('');
-  //brushBtn.bind('');
+  pencilBtn.click(function() {
+    activeTool = 'pencil';
+    // Remove the '.active' class from all buttons in the toolbar
+    toolbar.children('button').removeClass('btn-active');
+    $(this).addClass('btn-active');
+    
+  });
+  airbrushBtn.click(function() {
+    activeTool = 'airbrush';
+    toolbar.children('button').removeClass('btn-active');
+    $(this).addClass('btn-active');
+  });
+
   saveBtn.click(function() {
     updatePreview();
 

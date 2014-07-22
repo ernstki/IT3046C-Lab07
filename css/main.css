@@ -64,19 +64,19 @@ div#preview.collapsed {
 img#save-preview {
   width: 200px;
   height:150px;
-  /*top:0;
-  left:0;*/
+  top:10px;
+  left:10px;
   position:absolute;
-  /* FIXME: This means you can't right click on the image to save it.
-            NOW I know how those crummy bastards did it. */
+  /* FIXME: This means you can't right click on the image to save it. */
+  /*        NOW I know how those crummy bastards did it.              */
   pointer-events:none;
-  z-index:10;
 }
 
 #preview-toggle {
   top:5px;
   left:3px;
-  z-index:100;
+  /* This didn't work as I expected. Click event still didn't go through. */
+  /*z-index:100;*/
 }
 
 #preview-toggle.collapsed {
@@ -124,7 +124,7 @@ button {
   cursor:inherit;
 }
 
-button.active {
+button.btn-active {
   border:1px solid black !important;
 }
 
