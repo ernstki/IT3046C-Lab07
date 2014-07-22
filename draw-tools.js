@@ -72,6 +72,24 @@ function rndDropSize(dropSize) {
   return Math.ceil(Math.random() * dropSize);
 }
 
+// Math.hypot is an ECMAScript 6 feature. This polyfill makes it work in
+// Chrome and other browsers.
+// Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/hypot#Polyfill
+if (!Math.hypot) {
+  Math.hypot = function hypot() {
+    var y = 0;
+    var length = arguments.length;
+
+    for (var i = 0; i < length; i++) {
+      if(arguments[i] === Infinity || arguments[i] === -Infinity) {
+        return Infinity;
+      }
+      y += arguments[i] * arguments[i];
+    }
+    return Math.sqrt(y);
+  };
+} // Math.hypot
+
 // Paint with an "airbrush" effect (a lousy one):
 // 'options': context, x, y, r, dropSize, splatter, frenzy numSides
 // 'itvl':    an object with one property, 'id' for pass-by-reference
