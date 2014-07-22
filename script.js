@@ -27,13 +27,12 @@ $(function() {
   var g2            = canvas[0].getContext("2d"); // 1st element in collection
   var JITTER_TIMER  = 50;                         // msec
   var SAVE_FILENAME = 'image.png';
-  var itvl          = { id: 0 };                  // interval for pass-by-ref
   var penDown       = false;
   var activeTool    = 'pencil';
   var previewOn     = true;
-  var ptbuf         = [];                         // buffer of points
+  var ptbuf         = [];            // buffer of points for smooth pencil
+  var airbuf        = { itvls: [] }; // queue of interval timers for airbrush
   
-
   
   // ============================================================
   //        D R A W I N G    A R E A    B I N D I N G S
@@ -70,22 +69,35 @@ $(function() {
 
   canvas.mouseup(function() {
     penDown = false;
+    // Fade the tool palettes and preview back in
     $(".palette").hide().removeClass('ignore-ptr-events').fadeIn(500);
 
-    // Purge the point buffer:
-    purgeBuffer();
+    // Purge the point buffer for the pencil
+    purgePtBuf();
 
-    // Clear any timer interval (for the airbrush)
-    clearInterval(itvl.id);
+    // Clear ALL timer intervals (for the airbrush)
+    //console.log('itvl.id inside mouseup='+itvl.id);
+    clearAirbrushIntervals();
 
     console.log('ptbuf.length=' + ptbuf.length + ' ' + ptbuf.toString());
     updatePreview();
   }); // canvas.mouseup
   
   
-  function purgeBuffer() {
+  // =============================================================
+  //         D R A W    H E L P E R    F U N C T I O N S
+  // =============================================================
+  function purgePtBuf() {
+    // Clear the point buffer for the pencil tool
     for (var i = 0; i < ptbuf.length; i++) { ptbuf.pop(); }
   }
+  function clearAirbrushIntervals() {
+    // Clear all timer intervals for the airbrush
+    for (var i = 0; i < airbuf.itvls.length; i++) {
+      window.clearInterval(airbuf.itvls.shift());
+    }
+  } // clearAirbrushIntervals
+
 
   // ********************************************************************
   // *                   function draw(event)                           *
@@ -99,7 +111,7 @@ $(function() {
     
     switch (activeTool) {
       case 'airbrush':
-        airbrush( { context: g2, x: newX, y: newY }, itvl );
+        airbrush( { context: g2, x: newX, y: newY }, airbuf );
         break;
       case 'pencil':
       default:
@@ -112,6 +124,7 @@ $(function() {
     } // switch activeTool
   } // draw(evt)
 
+  // Now set draw functions to listen for canvas events
   canvas.bind('mousemove', draw);
 
 

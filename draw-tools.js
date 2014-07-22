@@ -111,11 +111,13 @@ if (!Math.hypot) {
 // ********************************************************************
 // *                function airbrush(options, itvl)                  *
 // ********************************************************************
-function airbrush(options, itvl) {
+function airbrush(options, airbuf) {
   // Paint with an "airbrush" effect (a lousy one):
   // 
   // 'options': context, x, y, r, dropSize, splatter, frenzy numSides
-  // 'itvl':    an object with one property, 'id' for pass-by-reference
+  // 'airbuf':  an object with one attribute (for pass-by-ref); maintains a
+  //            queue of timer intervals that can be cleared later (to fix
+  //            bug where paint would keep "bleeding through" after mouseup)
 
   if (typeof options.r == 'undefined') { options.r = BRUSH_SIZE / 2; }
   if (typeof options.dropSize == 'undefined') { options.dropSize = DROPLETS; }
@@ -124,7 +126,10 @@ function airbrush(options, itvl) {
   if (typeof options.numSides == 'undefined') { options.numSides = NUM_SIDES; }
   
   var drops = 0;
-  itvl.id = window.setInterval(function() {
+  
+  // Append this timer to the queue so it can be cleared by mouseup later:
+  airbuf.itvls[airbuf.itvls.length] =
+  window.setInterval(function() {
     // Randomly move the drops around on a normal distribution from the
     // center of the brush
     var rndOffX = rndOffset(options.r);
@@ -158,8 +163,10 @@ function airbrush(options, itvl) {
     } // if circle or polygon
     options.context.translate(-rndOffX, -rndOffY);
     drops++;
-    if (drops > MAX_DROPS) { window.clearInterval(itvl.id); }
+    if (drops > MAX_DROPS) { window.clearInterval(airbuf.itvls.pop()); }
   }, 10/options.flowRate); // min is actually 4ms, so yeah, 10 is hard-coded
+  
+  //console.log('itvl.id inside draw-tools.js='+itvl.id);
   
 } // airbrush(options)
 
