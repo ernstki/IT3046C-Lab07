@@ -11,26 +11,27 @@
 $(function() {
   'use strict';
 
-  var canvas       = $('#canvas');
-  var xDisp        = $('#x-coord');
-  var yDisp        = $('#y-coord');
-  var toolbar      = $('div#tools');
-  var pencilBtn    = $('button#pencil');
-  var airbrushBtn  = $('button#airbrush');
-  var brushMenu    = $('#paint-shapes');
-  var brushSubMenu = $('#paint-shapes-submenu');
-  var trashBtn     = $('button#trash');
-  var saveBtn      = $('button#save');
-  var previewBtn   = $('button#preview-toggle');
-  var previewImg   = $('#save-preview');
-  var previewArea  = $('div#preview');
-  var g2           = canvas[0].getContext("2d"); // get element from jQuery obj
-  var JITTER_TIMER = 50;                         // msec
-  var itvl         = { id: 0 };                  // interval for pass-by-ref
-  var penDown      = false;
-  var activeTool   = 'pencil';
-  var previewOn    = true;
-  var ptbuf        = [];                         // buffer of points
+  var canvas        = $('#canvas');
+  var xDisp         = $('#x-coord');
+  var yDisp         = $('#y-coord');
+  var toolbar       = $('div#tools');
+  var pencilBtn     = $('button#pencil');
+  var airbrushBtn   = $('button#airbrush');
+  var brushMenu     = $('#paint-shapes');
+  var brushSubMenu  = $('#paint-shapes-submenu');
+  var trashBtn      = $('button#trash');
+  var saveBtn       = $('button#save');
+  var previewBtn    = $('button#preview-toggle');
+  var previewImg    = $('#save-preview');
+  var previewArea   = $('div#preview');
+  var g2            = canvas[0].getContext("2d"); // 1st element in collection
+  var JITTER_TIMER  = 50;                         // msec
+  var SAVE_FILENAME = 'image.png';
+  var itvl          = { id: 0 };                  // interval for pass-by-ref
+  var penDown       = false;
+  var activeTool    = 'pencil';
+  var previewOn     = true;
+  var ptbuf         = [];                         // buffer of points
   
 
   
@@ -52,12 +53,15 @@ $(function() {
         if (ptbuf.length < 3
             && Math.abs(ptbuf[ptbuf.length-1].x - startX) < PENCIL_SIZE
             && Math.abs(ptbuf[ptbuf.length-1].y - startY) < PENCIL_SIZE) {
+
           // Don't wait for three points, just draw a dot and empty the buffer:
           circle({ context: g2,
                    centerX: startX,
                    centerY: startY,
+                   color: PENCIL_COLOR,
                    radius: PENCIL_SIZE });
-          for (var i = 0; i < ptbuf.length; i++) { ptbuf.pop(); }
+
+          purgeBuffer();
         } // if the buffer isn't full'
       }, JITTER_TIMER);
     } // if activeTool == pencil
@@ -67,28 +71,25 @@ $(function() {
   canvas.mouseup(function() {
     penDown = false;
     $(".palette").hide().removeClass('ignore-ptr-events').fadeIn(500);
+
     // Purge the point buffer:
-    for (var i = 0; i < ptbuf.length; i++) { ptbuf.pop(); }
+    purgeBuffer();
+
     // Clear any timer interval (for the airbrush)
     clearInterval(itvl.id);
+
     console.log('ptbuf.length=' + ptbuf.length + ' ' + ptbuf.toString());
     updatePreview();
   }); // canvas.mouseup
+  
+  
+  function purgeBuffer() {
+    for (var i = 0; i < ptbuf.length; i++) { ptbuf.pop(); }
+  }
 
-// FIXME:
-  // function paint(event) {
-    // var newX = event.pageX - $(this).offset().left;
-    // var newY = event.pageY - $(this).offset().top;
-// 
-    // switch (activeTool) {
-      // case 'airbrush':
-        // airbrush( { context: g2, x: newX, y: newY }, itvl );
-        // console.log('itvl='+itvl.id);
-        // break;
-    // }
-  // } // paint(event)
-  // canvas.mousedown(paint);
-// 
+  // ********************************************************************
+  // *                   function draw(event)                           *
+  // ********************************************************************
   // Handle penDown events for both tools
   function draw(event) {
     if (!penDown) { return; }
@@ -151,6 +152,7 @@ $(function() {
       previewOn = false;
       return;
     } // otherwise, show it again
+    //updatePreview(); // make sure the image is up-to-date (prob unnecessary)
     previewImg.show();
     previewArea.removeClass('collapsed');
     previewBtn.removeClass('collapsed');
@@ -161,8 +163,15 @@ $(function() {
     // Source: http://www.html5canvastutorials.com/advanced/html5-canvas-save-penDown-as-an-image/
     // save canvas image as data url (png format by default)
     var dataURL = canvas[0].toDataURL();
+
     // set #save-preview image src to dataURL so it can be saved as an image
     previewImg.attr('src', dataURL);
+    
+    // Wrap a link with the HTML5 'download' attribute already set, so we can
+    // 'click' on it with JavaScript later to trigger a download
+    // Source: http://www.nihilogic.dk/labs/canvas2image/
+    dataURL.replace('image/png', 'image/octet-stream');
+    previewImg.wrap('<a href="'+dataURL+'" download="'+SAVE_FILENAME+'">');
   } // updatePreview
 
 
@@ -187,13 +196,45 @@ $(function() {
   });
 
   saveBtn.click(function() {
-    updatePreview();
+    // probably unnecessary, since it's being redrawn on mouseup anyway
+    //updatePreview(); 
+    
+    // This works (found in a library[1]) but then your user has to know that
+    // they have to put a .png extension on the file for it to open in their
+    // OS. [1] http://www.nihilogic.dk/labs/canvas2image/
+    //window.open(previewImg.attrib('src')); 
+    
+    // By wrapping an anchor around the preview image with the HTML5
+    // 'download' attribute, then synthesizing a click on the image (FIXME:
+    // click events are currently being masked by some other element anyway),
+    // you get the best of both worlds, and no pop-up blockers getting in the
+    // way. Since the 'data:' URL changes every time (it *is* the image data)
+    // it's best to update this link in updatePrevew(). Here we just do the
+    // clicking
+    
+    // Source: http://techslides.com/html5-download-attribute-with-javascript/
+    var clkEvt = document.createEvent("MouseEvent");
+    // Most of these are screen x,y coords and status of modifier keys.
+    // The last 0, null is which mouse button (0 = primary/left-click) and
+    // property called relatedTarget which isn't used here (more info:
+    // http://tinyurl.com/k9pdamt - MDN event.initMouseEvent)
+    clkEvt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false,
+                          false, false, false, 0, null);
 
-  });
+    // Get the element out of jQuery obj and send the click event to trigger
+    // the download link
+    previewImg[0].dispatchEvent(clkEvt); 
+  }); // saveBtn.click
 
   // Clear the image when the trashcan icon is clicked
   trashBtn.click(function() {
     g2.clearRect(0, 0, canvas.width(), canvas.height());
+    updatePreview();
   });
+  
+  
+  // And update the preview area on load, to get rid of that pesky white
+  // border in Chrome:
+  updatePreview();
 
 });

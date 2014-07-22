@@ -1,3 +1,12 @@
+// *************************************************
+// *                                               *
+// *   draw-tools.js                               *
+// *                                               *
+// *   Kevin Ernst for Prof. Wulf's 14US_IT3046C   *
+// *   Lab 08 - HTML5 Canvas                       *
+// *                                               *
+// *************************************************
+// 
 // Global (yikes!) constants
 // I know this is really poor encapsulation, and this should be a class.
 // I'm a bit of a laggard on learning how to make "traditional" classes
@@ -21,9 +30,12 @@ var FLOW_RATE    = 0.8;  // how much paint is laid down in each stroke
 var NUM_SIDES    = 0;    // type of polygon for the "drops" (def; circle)
 
 
-// Draw a thin line on the given graphics context
-// Options hash expects: context, buf, color, width, smooth (bool)
+// ********************************************************************
+// *                   function pencil(options)                       *
+// ********************************************************************
 function pencil(options) {
+  // Draw a thin line on the given graphics context
+  // Options hash expects: context, buf, color, width, smooth (bool)
   // See what we're missing:
   if (typeof options.color == 'undefined') { options.color = PENCIL_COLOR; }
   if (typeof options.width == 'undefined') { options.width = PENCIL_SIZE; }
@@ -48,19 +60,22 @@ function pencil(options) {
 // ============================================================
 //      A I R B R U S H    H E L P E R    F U N C T I O N S
 // ============================================================
-// Box-Muller Transform to get random points between -1 and 1 on a
-// Normal (a.k.a. Gaussian) distribution:
-// Source: http://www.protonfish.com/jslib/boxmuller.shtml
 function rndBMT() {
-    var x = 0, y = 0, rds, c;
-    do {
-      x = Math.random()*2-1;
-      y = Math.random()*2-1;
-      rds = x*x + y*y;
-    } while (rds == 0 || rds > 1);
+  // Box-Muller Transform to get random points between -1 and 1 on a
+  // Normal (a.k.a. Gaussian) distribution.
+  //
+  // Source:   http://www.protonfish.com/jslib/boxmuller.shtml
+  // See also: http://en.wikipedia.org/w/index.php?title=Normal_distribution
+  //                  #Generating_values_from_normal_distribution
+  var x = 0, y = 0, rds, c;
+  do {
+    x = Math.random()*2-1;
+    y = Math.random()*2-1;
+    rds = x*x + y*y;
+  } while (rds == 0 || rds > 1);
 
-    c = Math.sqrt(-2*Math.log(rds)/rds);
-    return [x*c, y*c];
+  c = Math.sqrt(-2*Math.log(rds)/rds);
+  return [x*c, y*c];
 } // rndBMT
 
 function rndOffset(radius) {
@@ -74,7 +89,9 @@ function rndDropSize(dropSize) {
 
 // Math.hypot is an ECMAScript 6 feature. This polyfill makes it work in
 // Chrome and other browsers.
-// Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/hypot#Polyfill
+//
+// Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/
+//                 Global_Objects/Math/hypot#Polyfill
 if (!Math.hypot) {
   Math.hypot = function hypot() {
     var y = 0;
@@ -90,10 +107,16 @@ if (!Math.hypot) {
   };
 } // Math.hypot
 
-// Paint with an "airbrush" effect (a lousy one):
-// 'options': context, x, y, r, dropSize, splatter, frenzy numSides
-// 'itvl':    an object with one property, 'id' for pass-by-reference
+
+// ********************************************************************
+// *                function airbrush(options, itvl)                  *
+// ********************************************************************
 function airbrush(options, itvl) {
+  // Paint with an "airbrush" effect (a lousy one):
+  // 
+  // 'options': context, x, y, r, dropSize, splatter, frenzy numSides
+  // 'itvl':    an object with one property, 'id' for pass-by-reference
+
   if (typeof options.r == 'undefined') { options.r = BRUSH_SIZE / 2; }
   if (typeof options.dropSize == 'undefined') { options.dropSize = DROPLETS; }
   if (typeof options.flowRate == 'undefined') { options.flowRate = FLOW_RATE; }
@@ -113,6 +136,9 @@ function airbrush(options, itvl) {
 
     // Move the droplets to a random offset from the given (x,y) center
     options.context.translate(rndOffX, rndOffY);
+
+    //   Circular brush
+    // ------------------------------------------------------------
     if (options.numSides == 0 ) {
       circle({ context: options.context,
                centerX: options.x,
@@ -120,6 +146,9 @@ function airbrush(options, itvl) {
                radius: rndDrop });
       // Move the axes back to the original (x,y)
     } else { // draw a randomly-rotated polygon for a "drop"
+
+    //   Polygonal (triangular) brush
+    // ------------------------------------------------------------
       var rndRot = Math.random() * 2*Math.PI; // 0 to 2*pi radians
       polygon({ context: options.context,
                 centerX: options.x,
@@ -134,8 +163,12 @@ function airbrush(options, itvl) {
   
 } // airbrush(options)
 
-// Parameter: options has := centerX, centerY, radius, numSides, color, rotation
+
+// ********************************************************************
+// *                   function polygon(options)                      *
+// ********************************************************************
 function polygon(options) { 
+  // options hash := centerX, centerY, radius, numSides, color, rotation
   if (typeof options.numSides == 'undefined') { options.numSides = NUM_SIDES; } 
   if (typeof options.color == 'undefined') { options.color = BRUSH_COLOR; }
   if (typeof options.rotation == 'undefined') { options.rotation = 0; }
@@ -157,8 +190,12 @@ function polygon(options) {
   options.context.fill();
 } // polygon(options)
 
-// Parameter: options hash := context, centerX, centerY, radius, color
+
+// ********************************************************************
+// *                    function circle(options)                      *
+// ********************************************************************
 function circle(options) {
+  // options hash := context, centerX, centerY, radius, color
   if (typeof options.color == 'undefined') { options.color = BRUSH_COLOR; }
   options.context.beginPath();
   options.context.arc(options.centerX, options.centerY, options.radius,
@@ -166,4 +203,4 @@ function circle(options) {
   options.context.strokeStyle = 'none'; // options.color;
   options.context.fillStyle = options.color;
   options.context.fill();
-} // circle(cx,cy,r)
+} // circle(options)
