@@ -100,7 +100,7 @@ img#save-preview {
   cursor:crosshair;
 }
 
-.palette {
+div.palette {
   position: absolute;
   border: 1px solid white;
   background: rgba(0,0,0,0.5);
