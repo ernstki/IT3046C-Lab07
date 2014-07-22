@@ -20,15 +20,29 @@ var PENCIL_SIZE  = 3;
 var PENCIL_COLOR = 'black';
 var SMOOTHING    = true;
 
-// Airbrush options
-var BRUSH_COLOR  = 'rgba(51,102,153,0.5)'; //'336699'
+// Airbrush (default) options
+var OPACITY      = 0.5;  // default opacity
+var BRUSH_COLOR  = 'rgba(51,102,153,'+OPACITY+')'; // #336699
 var BRUSH_SIZE   = 10;   // the max size of the brush
 var DROPLETS     = 8;    // the max size of each droplet
-var MAX_DROPS    = 100; // when to stop painting droplets
+var MAX_DROPS    = 100;  // when to stop painting droplets
 //var SPLATTER     = 5;    // how dispersed the droplets are (avg px)
 var FLOW_RATE    = 0.8;  // how much paint is laid down in each stroke
 var NUM_SIDES    = 0;    // type of polygon for the "drops" (def; circle)
 
+// Convert CSS-style hex triplet to rgba
+// Source: http://www.javascripter.net/faq/hextorgb.htm
+function hexToRGBA(trip, opacity) {
+  if (typeof opacity == 'undefined') { opacity = OPACITY; }
+  // Trim leading hash, if necessary
+  if (trip.charAt(0)=="#") { trip = trip.substring(1,7); }
+
+  return 'rgba(' +
+         parseInt(trip.substring(0,2),16) +','+ //red
+         parseInt(trip.substring(2,4),16) +','+ //green
+         parseInt(trip.substring(4,6),16) +','+ //blue
+         opacity + ')';
+} // hexToRGBA
 
 // ********************************************************************
 // *                   function pencil(options)                       *
@@ -114,12 +128,15 @@ if (!Math.hypot) {
 function airbrush(options, airbuf) {
   // Paint with an "airbrush" effect (a lousy one):
   // 
-  // 'options': context, x, y, r, dropSize, splatter, frenzy numSides
+  // 'options': context, x, y, r, color, opacity, dropSize, splatter, frenzy
+  //            numSides
   // 'airbuf':  an object with one attribute (for pass-by-ref); maintains a
   //            queue of timer intervals that can be cleared later (to fix
   //            bug where paint would keep "bleeding through" after mouseup)
 
-  if (typeof options.r == 'undefined') { options.r = BRUSH_SIZE / 2; }
+  if (typeof options.r == 'undefined')        { options.r = BRUSH_SIZE / 2; }
+  if (typeof options.color == 'undefined')    { options.color = BRUSH_COLOR; }
+  if (typeof options.opacity == 'undefined')  { options.opacity = OPACITY; }
   if (typeof options.dropSize == 'undefined') { options.dropSize = DROPLETS; }
   if (typeof options.flowRate == 'undefined') { options.flowRate = FLOW_RATE; }
   //if (typeof options.splatter == 'undefined') { options.splatter = SPLATTER; }
@@ -148,6 +165,7 @@ function airbrush(options, airbuf) {
       circle({ context: options.context,
                centerX: options.x,
                centerY: options.y,
+               color: hexToRGBA(options.color, options.opacity),
                radius: rndDrop });
       // Move the axes back to the original (x,y)
     } else { // draw a randomly-rotated polygon for a "drop"
@@ -158,6 +176,7 @@ function airbrush(options, airbuf) {
       polygon({ context: options.context,
                 centerX: options.x,
                 centerY: options.y,
+                color: hexToRGBA(options.color, options.opacity),
                 radius: rndDrop,
                 rotation: rndRot });
     } // if circle or polygon

@@ -69,6 +69,19 @@ img.collapsed, a.collapsed {
   display:none;
 }
 
+button.collapsed i {
+  color: #aaa;
+}
+
+button.toggle i {
+  text-shadow: none;
+  color: #ccc; 
+}
+
+button.toggle i:hover {
+  color: #fff;
+}
+
 img#save-preview {
   width: 200px;
   height:150px;
@@ -81,24 +94,12 @@ img#save-preview {
 }
 
 #preview-toggle {
-  top:5px;
-  left:3px;
+  /* FIXME: This causes paint glitches in Chrome */
+  position:absolute;
+  bottom:0;
+  right:3px;
   /* This didn't work as I expected. Click event still didn't go through. */
-  /*z-index:100;*/
-}
-
-#preview-toggle.collapsed {
-  font-size:10px !important;
-}
-
-#preview-toggle i {
-  text-shadow: none;
-  color: #ccc; 
-}
-
-/* FIXME: This isn't working */'
-#preview-toggle i:hover {
-  color: #fff;
+  z-index:100;
 }
 
 #canvas {
@@ -163,6 +164,64 @@ button i {
   display:none;
 }
 
+#options {
+  left:10px;
+  bottom:10px;
+}
+
+#options fieldset {
+  margin:0;
+  padding:0;
+  border:none;
+}
+
+#options form {
+  margin:0 5px 0 25px;
+}
+
+#options form.collapsed {
+  display:none;
+}
+
+div#options.collapsed {
+  padding:0;
+  width:auto;
+  height:auto;
+}
+
+#options-form label {
+  min-width:110px;
+  text-overflow:ellipsis;
+  font-size:10pt;
+  display:inline-block;
+  float:left;
+}
+
+#options-form input {
+  max-width: 50px;
+  margin-bottom: 5px;
+}
+
+#options-form #debug-options {
+  margin-top: 10px;
+  border-top: 1px solid #999;
+}
+
+#tool-options label:after {
+  content:': ';
+}
+
+#debug-options label {
+  /*line-height:100%;*/
+  padding-top:8px;
+}
+
+#options-toggle {
+  position:absolute;
+  left:0;
+  bottom:0;
+}
+
 .submenu-open {
   background:rgba(0,0,0,0.5);
 }
@@ -175,6 +234,7 @@ button i {
 
 #coords p {
   margin:0;
+  text-align:right;
 }
 
 p#debug {

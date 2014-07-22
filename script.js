@@ -11,28 +11,69 @@
 $(function() {
   'use strict';
 
+  // Default debugging options (user can turn off)
   var DEBUG_BUFFERS = true;
-  var canvas        = $('#canvas');
+  
+  // Palette (floating) windows
+  var toolbar       = $('div#tools');
+  var optionsArea   = $('div#options');
+  var previewArea   = $('div#preview');
+  
+  // Coordinates / debug area:
   var xDisp         = $('#x-coord');
   var yDisp         = $('#y-coord');
   var debugArea     = $('p#debug');
-  var toolbar       = $('div#tools');
+
+  // Tool palette buttons
   var pencilBtn     = $('button#pencil');
   var airbrushBtn   = $('button#airbrush');
   var brushMenu     = $('#paint-shapes');
   var brushSubMenu  = $('#paint-shapes-submenu');
   var trashBtn      = $('button#trash');
   var saveBtn       = $('button#save');
+  
+  // Tool defaults
+  var DEFAULT_PWIDTH    = 3;           // default pencil width
+  var DEFAULT_PCOLOR    = '#000000';   // " " color
+  var DEFAULT_BSIZE     = 15;          // default brush aperture
+  var DEFAULT_BCOLOR    = '#336699';   // " " color - rgba(51,102,153)
+  var MAX_THINNER       = 10;          // the max value for "paint thinner"
+  var DEFAULT_OPACITY   = 0.5;
+
+  // Options area controls
+  //var toolOptionsFS = $('fieldset#tool-options');
+  var optionsForm   = $('form#options-form');
+  var optionsBtn    = $('button#options-toggle');
+  var defaultsBtn   = $('button#options-reload');
+  var pWidthInput   = $('#pencil-width');
+  var pColorInput   = $('#pencil-color');
+  var bSizeInput    = $('#brush-size');
+  var bColorInput   = $('#paint-color');
+  var bThinnerInput = $('#paint-thinner');
+  var debugCheckbox = $('#debug-in-coords');
+  // We could just use the form controls to store these, but maybe someday
+  // we'd like to save the settings with HTML5 storage API.
+  var topts         = { pwidth:  DEFAULT_PWIDTH,
+                        pcolor:  DEFAULT_PCOLOR,
+                        bsize:   DEFAULT_BSIZE,
+                        bcolor:  DEFAULT_BCOLOR,
+                        opacity: DEFAULT_OPACITY,
+                        debug:   DEBUG_BUFFERS };
+
+  // Preview image area
   var previewBtn    = $('button#preview-toggle');
   var previewImg    = $('#save-preview');
   var previewLink   = $('#download-link');
-  var previewArea   = $('div#preview');
+
+  // Graphics context
+  var canvas        = $('#canvas');
   var g2            = canvas[0].getContext("2d"); // 1st element in collection
   var JITTER_TIMER  = 50;                         // msec
   var SAVE_FILENAME = 'image.png';
   var penDown       = false;
   var activeTool    = 'pencil';
   var previewOn     = true;
+  var optionsOn     = true;
   var ptbuf         = [];            // buffer of points for smooth pencil
   var airbuf        = { itvls: [] }; // queue of interval timers for airbrush
   
@@ -57,11 +98,8 @@ $(function() {
             && Math.abs(ptbuf[ptbuf.length-1].y - startY) < PENCIL_SIZE) {
 
           // Don't wait for three points, just draw a dot and empty the buffer:
-          circle({ context: g2,
-                   centerX: startX,
-                   centerY: startY,
-                   color: PENCIL_COLOR,
-                   radius: PENCIL_SIZE });
+          circle({ context:g2, centerX:startX, centerY:startY,
+                   color:topts.pcolor, radius:topts.pwidth/2 });
 
           purgePtBuf();
         } // if the buffer isn't full'
@@ -123,14 +161,18 @@ $(function() {
     
     switch (activeTool) {
       case 'airbrush':
-        airbrush( { context: g2, x: newX, y: newY }, airbuf );
+        airbrush( { context:g2, x:newX, y:newY,
+                    color:topts.bcolor, r:topts.bsize/2,
+                    opacity:topts.opacity }, airbuf );
         break;
       case 'pencil':
       default:
         ptbuf.push( { x: newX, y: newY } );
         if (ptbuf.length == 3) {
           // console.log('Drawing...');
-          pencil( { context: g2, buf: ptbuf, } );
+          pencil( { context:g2, color:topts.pcolor,
+                    width:topts.pwidth, buf: ptbuf, } ); 
+          
           ptbuf.shift(); ptbuf.shift();  // last point is now first
         } // if there are three points in the buffer
     } // switch activeTool
@@ -145,7 +187,7 @@ $(function() {
   // ============================================================
   
   function updateDebugInfo() {
-    if (DEBUG_BUFFERS) {
+    if (topts.debug) {
       debugArea.html('ptbuf.length='+ptbuf.length+' airbuf.itvls.length='
                      +airbuf.itvls.length);
     }
@@ -172,7 +214,43 @@ $(function() {
         break;
     } // switch (event.type)
   } // paintShapeSubmenu(event)
+  
+  
+  // Update paint tool settings:
+  function updateToolSettings(option) {
+    if (typeof option != 'undefined' && option == 'defaults') {
+      // Load form values and options hash with defaults
+      pWidthInput.val(DEFAULT_PWIDTH);
+      pColorInput.val(DEFAULT_PCOLOR);
+      bSizeInput.val(DEFAULT_BSIZE);
+      bColorInput.val(DEFAULT_BCOLOR);
+      // MAX_THINNER is the same as 1.0 opacity
+      bThinnerInput.val(parseInt(MAX_THINNER*(1-DEFAULT_OPACITY)));
+      topts = { pwidth:  DEFAULT_PWIDTH, pcolor: DEFAULT_PCOLOR,
+                bsize:   DEFAULT_BSIZE,  bcolor: DEFAULT_BCOLOR,
+                opacity: DEFAULT_OPACITY, debug: DEBUG_BUFFERS };
+    } // load defaults
+   
+    // Otherwise, update the config hash with values from the form elements: 
+    topts.pwidth  = pWidthInput.val();
+    topts.pcolor  = pColorInput.val();
+    topts.bsize   = bSizeInput.val();
+    topts.bcolor  = bColorInput.val();
+    // More thinner (0-10) means less opaque
+    topts.opacity = (MAX_THINNER - bThinnerInput.val()) / MAX_THINNER; 
+    topts.debug   = debugCheckbox.prop('checked'); // http://stackoverflow.com/a/426276
+    
+    // Show/hide the debugging information in to top floating window
+    toggleDebugArea();
+  } // updateToolSettings(option)
 
+  function toggleDebugArea() {
+    if (topts.debug) {
+      debugArea.show(200);
+    } else {
+      debugArea.hide(200);
+    }
+  }
   
   // Toggle the preview area (set the enclosed image to display:none and
   // the height/width of the <div> to 'auto') when the "eye" icon is clicked
@@ -192,6 +270,20 @@ $(function() {
     previewArea.children().removeClass('collapsed');
     previewOn = true;
   } // togglePreviewArea(event)
+
+  // Toggle the options palette
+  function toggleOptions(event) {
+    if (optionsOn) {
+      // Collapse the containing div to just hug the toggle button
+      optionsArea.addClass('collapsed');
+      optionsArea.children().addClass('collapsed');
+      optionsOn = false;
+      return;
+    } // otherwise, show it again
+    optionsArea.removeClass('collapsed');
+    optionsArea.children().removeClass('collapsed');
+    optionsOn = true;
+  } // toggleOptions(event)
   
   function updatePreview() {
     // Source: http://www.html5canvastutorials.com/advanced/html5-canvas-save-penDown-as-an-image/
@@ -215,6 +307,10 @@ $(function() {
 
   // Toggle the preview area on a mouse click
   previewBtn.click(togglePreviewArea);
+  // Toggle the options palette
+  optionsBtn.click(toggleOptions);
+  // Reload default tool options
+  defaultsBtn.click(updateToolSettings('defaults'));
 
   pencilBtn.click(function() {
     activeTool = 'pencil';
@@ -223,6 +319,7 @@ $(function() {
     $(this).addClass('btn-active');
     
   });
+
   airbrushBtn.click(function() {
     activeTool = 'airbrush';
     toolbar.children('button').removeClass('btn-active');
@@ -263,14 +360,24 @@ $(function() {
   // Clear the image when the trashcan icon is clicked
   trashBtn.click(function() {
     // stopDrawing updates the preview *and* clears timers and buffers:
-    stopDrawing();
-    g2.clearRect(0, 0, canvas.width(), canvas.height());
-    updatePreview();
+    if( window.confirm('This will clear your canvas.') ) {
+      stopDrawing();
+      g2.clearRect(0, 0, canvas.width(), canvas.height());
+      updatePreview();
+    }
   });
   
   
+  // ********************************************************************
+  // *                       S T A R T U P
+  // ********************************************************************
   // And update the preview area on load, to get rid of that pesky white
   // border in Chrome:
   updatePreview();
+  updateToolSettings('defaults');
+  
+  // Run updateToolSettings whenever a control in the tool-options fieldset
+  // is changed:
+  optionsForm.change(updateToolSettings);
 
-});
+}); // jQuery onload

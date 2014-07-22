@@ -5,7 +5,7 @@
   -  Author:   Kevin Ernst <ernstki@mail.uc.edu>
   -  Date:     2014-XX-XX
   -->
-<html lang="en">
+<html lang="en" manifest="jankypaint.manifest">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -37,7 +37,7 @@
             <button id="pencil" class="btn-active" title="Pencil Tool - draws narrow lines">
               <i class="fa fa-pencil"></i></button><br>
             <button id="airbrush" title="Airbrush Tool - paints on canvas">
-              <i class="fa fa-circle-o"></i></button><br>
+              <i class="fa fa-certificate"></i></button><br>
             <div id="paint-shapes-submenu" class="submenu">
               <button id="airbrush-alt"><i class="fa fa-play ccw90"></i></button>
             </div>
@@ -48,6 +48,50 @@
           </div> <!-- tools -->
           
           <!-- Tool options palette -->
+          <div id="options" class="palette">
+            <!--button id="options-reload" title="Restore all original values">
+              <i class="fa fa-refresh"></i>
+            </button-->
+            <button id="options-toggle" title="Show/Hide Tool Options">
+              <i class="fa fa-angle-double-left"></i>
+            </button>
+            <form id="options-form">
+              <fieldset id="tool-options">
+                <fieldset id="pencil-width-controls"
+                 title="[1-10] The thickness of the pencil's 'lead'">
+                  <label for="pencil-width">Pencil width</label>
+                  <input name="pencil-width" id="pencil-width" type="number"
+                   size="3" min="1" max="10">
+                </fieldset> <!-- pencil-width-controls -->
+                <fieldset id="pencil-color-controls">
+                  <label for="pencil-color">Pencil color</label>
+                  <input name="pencil-color" id="pencil-color" type="color">
+                </fieldset> <!-- pencil-color-controls -->
+                <fieldset id="brush-size-controls"
+                 title="[3-50] A wider aperature puts more paint on the page">
+                  <label for="brush-size">Airbrush aperture</label>
+                  <input name="brush-size" id="brush-size" type="number"
+                   size="3" min="5" max="50">
+                </fieldset> <!-- brush-size-controls -->
+                <fieldset id="paint-color-controls">
+                  <label for="paint-color">Paint color</label>
+                  <input name="paint-color" id="paint-color" type="color">
+                </fieldset> <!-- paint-color-controls -->
+                <fieldset id="paint-thinner-controls"
+                 title="[0-10] Thinner paint lets more of the 'canvas' show through">
+                  <label for="paint-thinner">Paint thinner</label>
+                  <input name="paint-thinner" id="paint-thinner" type="number"
+                   size="3" min="1" max="10">
+                </fieldset> <!-- paint-color-controls -->
+              </fieldset> <!-- tool-options -->
+              <fieldset id="debug-options">
+                <label for="debug-in-coords"
+                 title="Display debugging information for brush/pencil?">
+                 Show debug info?</label>
+                <input name="debug-in-coords" id="debug-in-coords" type="checkbox">
+              </fieldset> <!-- debug-options -->
+            </form> <!-- options-form -->
+          </div>
            
           <!-- Image preview area -->
           <div id="preview" class="palette">
